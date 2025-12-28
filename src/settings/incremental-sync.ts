@@ -1,6 +1,5 @@
 import { Modal, Notice, Setting } from 'obsidian'
 import i18n from '~/i18n'
-import { ServerType } from '~/settings'
 import { FileIndexStore, DirMtimeStore } from '~/storage/file-index'
 import { getDBKey } from '~/utils/get-db-key'
 import logger from '~/utils/logger'
@@ -18,7 +17,7 @@ export default class IncrementalSyncSettings extends BaseSettings {
 		this.containerEl.empty()
 
 		// 只在通用WebDAV模式下显示
-		if (this.plugin.settings.serverType !== ServerType.WEBDAV) {
+		if (this.plugin.settings.serverType !== 'webdav') {
 			return
 		}
 
