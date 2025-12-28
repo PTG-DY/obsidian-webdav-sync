@@ -28,7 +28,7 @@ export default class SelectRemoteBaseDirModal extends Modal {
 			fs: {
 				ls: async (target) => {
 					const token = await this.plugin.getToken()
-					const items = await getDirectoryContents(token, target)
+					const items = await getDirectoryContents(token, target, this.plugin.settings)
 					return items.map(fileStatToStatModel)
 				},
 				mkdirs: async (path) => {

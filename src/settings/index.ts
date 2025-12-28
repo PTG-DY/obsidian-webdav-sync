@@ -9,11 +9,22 @@ import AccountSettings from './account'
 import CacheSettings from './cache'
 import CommonSettings from './common'
 import FilterSettings from './filter'
+import IncrementalSyncSettings from './incremental-sync'
 import LogSettings from './log'
 
 export enum SyncMode {
 	STRICT = 'strict',
 	LOOSE = 'loose',
+}
+
+/**
+ * 服务器类型枚举
+ * - nutstore: 坚果云，支持Delta API增量同步
+ * - webdav: 通用WebDAV服务器（如群晖NAS），使用标准WebDAV协议
+ */
+export enum ServerType {
+	NUTSTORE = 'nutstore',
+	WEBDAV = 'webdav',
 }
 
 export interface NutstoreSettings {
@@ -37,6 +48,20 @@ export interface NutstoreSettings {
 	realtimeSync: boolean
 	startupSyncDelaySeconds: number
 	autoSyncIntervalSeconds: number
+	/**
+	 * 服务器类型：坚果云或通用WebDAV
+	 */
+	serverType: ServerType
+	/**
+	 * 自定义WebDAV服务器URL（仅在serverType为webdav时使用）
+	 * 例如: https://your-synology-nas:5006
+	 */
+	webdavServerUrl: string
+	/**
+	 * WebDAV服务器基础路径（仅在serverType为webdav时使用）
+	 * 例如群晖通常是: / 或 /homes/username
+	 */
+	webdavBasePath: string
 }
 
 let pluginInstance: NutstorePlugin | null = null
@@ -61,6 +86,7 @@ export class NutstoreSettingTab extends PluginSettingTab {
 	filterSettings: FilterSettings
 	logSettings: LogSettings
 	cacheSettings: CacheSettings
+	incrementalSyncSettings: IncrementalSyncSettings
 
 	subSso = onSsoReceive().subscribe(() => {
 		this.display()
@@ -96,6 +122,12 @@ export class NutstoreSettingTab extends PluginSettingTab {
 			this,
 			this.containerEl.createDiv(),
 		)
+		this.incrementalSyncSettings = new IncrementalSyncSettings(
+			this.app,
+			this.plugin,
+			this,
+			this.containerEl.createDiv(),
+		)
 		this.logSettings = new LogSettings(
 			this.app,
 			this.plugin,
@@ -109,6 +141,7 @@ export class NutstoreSettingTab extends PluginSettingTab {
 		await this.commonSettings.display()
 		await this.filterSettings.display()
 		await this.cacheSettings.display()
+		await this.incrementalSyncSettings.display()
 		await this.logSettings.display()
 	}
 

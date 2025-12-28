@@ -26,6 +26,7 @@ import {
 	NutstoreSettingTab,
 	setPluginInstance,
 	SyncMode,
+	ServerType,
 } from './settings'
 import { ConflictStrategy } from './sync/tasks/conflict-resolve.task'
 import { decryptOAuthResponse } from './utils/decrypt-ticket-response'
@@ -113,6 +114,10 @@ export default class NutstorePlugin extends Plugin {
 			realtimeSync: false,
 			startupSyncDelaySeconds: 0,
 			autoSyncIntervalSeconds: 300,
+			// 新增：服务器类型配置
+			serverType: ServerType.NUTSTORE,
+			webdavServerUrl: '',
+			webdavBasePath: '/',
 		}
 
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData())

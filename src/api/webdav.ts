@@ -2,7 +2,8 @@ import { XMLParser } from 'fast-xml-parser'
 import { isNil, partial } from 'lodash-es'
 import { basename, join } from 'path-browserify'
 import { FileStat } from 'webdav'
-import { NS_DAV_ENDPOINT } from '~/consts'
+import { getWebDAVEndpoint, getWebDAVBasePath } from '~/consts'
+import { NutstoreSettings } from '~/settings'
 import { is503Error } from '~/utils/is-503-error'
 import logger from '~/utils/logger'
 import requestUrl from '~/utils/request-url'
@@ -37,8 +38,26 @@ function convertToFileStat(
 	const props = item.propstat.prop
 	const isDir = !isNil(props.resourcetype?.collection)
 	const href = decodeURIComponent(item.href)
-	const filename =
-		serverBase === '/' ? href : join('/', href.replace(serverBase, ''))
+
+	// 处理服务器基础路径
+	// 如果serverBase为'/'，直接使用href
+	// 否则移除serverBase前缀
+	let filename: string
+	if (serverBase === '/') {
+		filename = href
+	} else {
+		// 确保正确移除基础路径前缀
+		if (href.startsWith(serverBase)) {
+			filename = join('/', href.slice(serverBase.length))
+		} else {
+			filename = href
+		}
+	}
+
+	// 确保路径格式正确
+	if (!filename.startsWith('/')) {
+		filename = '/' + filename
+	}
 
 	return {
 		filename,
@@ -51,16 +70,26 @@ function convertToFileStat(
 	}
 }
 
+/**
+ * 获取WebDAV目录内容
+ * @param token 认证令牌
+ * @param path 目录路径
+ * @param settings 插件设置（用于获取正确的端点和基础路径）
+ */
 export async function getDirectoryContents(
 	token: string,
 	path: string,
+	settings: NutstoreSettings,
 ): Promise<FileStat[]> {
 	const contents: FileStat[] = []
+	const endpoint = getWebDAVEndpoint(settings)
+	const serverBasePath = getWebDAVBasePath(settings)
+
 	path = path.split('/').map(encodeURIComponent).join('/')
 	if (!path.startsWith('/')) {
 		path = '/' + path
 	}
-	let currentUrl = `${NS_DAV_ENDPOINT}${path}`
+	let currentUrl = `${endpoint}${path}`
 
 	while (true) {
 		try {
@@ -98,8 +127,10 @@ export async function getDirectoryContents(
 				? result.multistatus.response
 				: [result.multistatus.response]
 
-			// 跳过第一个条目（当前目录）
-			contents.push(...items.slice(1).map(partial(convertToFileStat, '/dav')))
+			// 跳过第一个条目（当前目录），使用动态的服务器基础路径
+			contents.push(
+				...items.slice(1).map(partial(convertToFileStat, serverBasePath)),
+			)
 
 			const linkHeader = response.headers['link'] || response.headers['Link']
 			if (!linkHeader) {

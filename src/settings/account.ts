@@ -1,7 +1,8 @@
-import { createOAuthUrl } from '@nutstore/sso-js'
+import { createOAuthUrl } from '~/utils/sso-mock'
 import { Notice, Setting } from 'obsidian'
 import LogoutConfirmModal from '~/components/LogoutConfirmModal'
 import i18n from '~/i18n'
+import { ServerType } from '~/settings'
 import { OAuthResponse } from '~/utils/decrypt-ticket-response'
 import { is503Error } from '~/utils/is-503-error'
 import logger from '~/utils/logger'
@@ -16,25 +17,89 @@ export default class AccountSettings extends BaseSettings {
 			.setName(i18n.t('settings.sections.account'))
 			.setHeading()
 
+		// 服务器类型选择
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.loginMode.name'))
+			.setName(i18n.t('settings.serverType.name'))
+			.setDesc(i18n.t('settings.serverType.desc'))
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption('manual', i18n.t('settings.loginMode.manual'))
-					.addOption('sso', i18n.t('settings.loginMode.sso'))
-					.setValue(this.plugin.settings.loginMode)
-					.onChange(async (value: 'manual' | 'sso') => {
-						this.plugin.settings.loginMode = value
+					.addOption(ServerType.NUTSTORE, i18n.t('settings.serverType.nutstore'))
+					.addOption(ServerType.WEBDAV, i18n.t('settings.serverType.webdav'))
+					.setValue(this.plugin.settings.serverType || ServerType.NUTSTORE)
+					.onChange(async (value: ServerType) => {
+						this.plugin.settings.serverType = value
+						// 切换到通用WebDAV时，强制使用手动登录
+						if (value === ServerType.WEBDAV) {
+							this.plugin.settings.loginMode = 'manual'
+						}
 						await this.plugin.saveSettings()
 						this.display()
 					}),
 			)
 
-		if (this.settings.isSSO) {
-			await this.displaySSOLoginSettings()
+		const isGenericWebDAV = this.plugin.settings.serverType === ServerType.WEBDAV
+
+		// 通用WebDAV服务器配置
+		if (isGenericWebDAV) {
+			await this.displayWebDAVServerSettings()
 		} else {
-			await this.displayManualLoginSettings()
+			// 坚果云登录模式选择（仅在坚果云模式下显示）
+			new Setting(this.containerEl)
+				.setName(i18n.t('settings.loginMode.name'))
+				.addDropdown((dropdown) =>
+					dropdown
+						.addOption('manual', i18n.t('settings.loginMode.manual'))
+						.addOption('sso', i18n.t('settings.loginMode.sso'))
+						.setValue(this.plugin.settings.loginMode)
+						.onChange(async (value: 'manual' | 'sso') => {
+							this.plugin.settings.loginMode = value
+							await this.plugin.saveSettings()
+							this.display()
+						}),
+				)
+
+			if (this.settings.isSSO) {
+				await this.displaySSOLoginSettings()
+			} else {
+				await this.displayManualLoginSettings()
+			}
 		}
+	}
+
+	/**
+	 * 显示通用WebDAV服务器配置（群晖等）
+	 */
+	private async displayWebDAVServerSettings() {
+		// WebDAV服务器URL
+		new Setting(this.containerEl)
+			.setName(i18n.t('settings.webdavServer.url.name'))
+			.setDesc(i18n.t('settings.webdavServer.url.desc'))
+			.addText((text) =>
+				text
+					.setPlaceholder(i18n.t('settings.webdavServer.url.placeholder'))
+					.setValue(this.plugin.settings.webdavServerUrl || '')
+					.onChange(async (value) => {
+						this.plugin.settings.webdavServerUrl = value
+						await this.plugin.saveSettings()
+					}),
+			)
+
+		// WebDAV基础路径
+		new Setting(this.containerEl)
+			.setName(i18n.t('settings.webdavServer.basePath.name'))
+			.setDesc(i18n.t('settings.webdavServer.basePath.desc'))
+			.addText((text) =>
+				text
+					.setPlaceholder(i18n.t('settings.webdavServer.basePath.placeholder'))
+					.setValue(this.plugin.settings.webdavBasePath || '/')
+					.onChange(async (value) => {
+						this.plugin.settings.webdavBasePath = value
+						await this.plugin.saveSettings()
+					}),
+			)
+
+		// 账号密码（通用WebDAV使用标准HTTP Basic认证）
+		await this.displayManualLoginSettings()
 	}
 
 	async hide() {

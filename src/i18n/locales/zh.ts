@@ -1,6 +1,24 @@
 export default {
 	settings: {
 		title: 'WebDAV 设置',
+		serverType: {
+			name: '服务器类型',
+			desc: '选择你使用的WebDAV服务器类型。坚果云支持增量同步，通用WebDAV（如群晖NAS）使用标准协议。',
+			nutstore: '坚果云',
+			webdav: '通用WebDAV（群晖等）',
+		},
+		webdavServer: {
+			url: {
+				name: 'WebDAV服务器地址',
+				desc: '输入WebDAV服务器的完整URL，例如：https://your-nas:5006 或 https://your-nas:5006/webdav',
+				placeholder: 'https://your-nas:5006',
+			},
+			basePath: {
+				name: '服务器基础路径',
+				desc: '服务器返回的文件路径前缀。群晖WebDAV通常为 / 。如果文件路径显示不正确，请调整此设置。',
+				placeholder: '/',
+			},
+		},
 		account: {
 			name: '账号',
 			desc: '输入你的 WebDAV 账号',
@@ -120,6 +138,35 @@ export default {
 			name: '跳过大文件',
 			desc: '同步时将跳过超过此大小的文件。如遇同步崩溃，可尝试降低此值。留空表示不限制。',
 			placeholder: '例如：10 MiB 或 500 KiB',
+		},
+		incrementalSync: {
+			title: '增量同步设置',
+			desc: '通用WebDAV模式下的增量同步功能，支持百万级文件的高效同步。',
+			status: {
+				name: '索引状态',
+				desc: '当前文件索引的统计信息',
+				noIndex: '尚未建立索引',
+				indexed: '已索引 {{fileCount}} 个文件，{{dirCount}} 个目录',
+			},
+			rebuildIndex: {
+				name: '重建索引',
+				desc: '清除现有索引并重新扫描远程文件。首次同步或索引损坏时使用。',
+				button: '重建索引',
+				confirm: '确认重建',
+				confirmMessage: '这将清除现有索引并重新扫描所有远程文件。对于大量文件可能需要较长时间，确定要继续吗？',
+				success: '索引重建成功',
+				inProgress: '正在重建索引...',
+			},
+			clearIndex: {
+				name: '清除索引',
+				desc: '删除本地文件索引。下次同步时将重新建立。',
+				button: '清除',
+				success: '索引已清除',
+			},
+			howItWorks: {
+				name: '工作原理',
+				desc: '增量同步使用分层目录mtime检测策略，只扫描发生变化的目录，大幅减少网络请求和扫描时间。首次同步会建立完整索引，后续同步仅检测变更。',
+			},
 		},
 		log: {
 			title: '调试日志',

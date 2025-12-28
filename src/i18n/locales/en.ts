@@ -1,5 +1,23 @@
 export default {
 	settings: {
+		serverType: {
+			name: 'Server type',
+			desc: 'Select your WebDAV server type. Nutstore supports delta sync, while generic WebDAV (like Synology NAS) uses standard protocol.',
+			nutstore: 'Nutstore',
+			webdav: 'Generic WebDAV (Synology, etc.)',
+		},
+		webdavServer: {
+			url: {
+				name: 'WebDAV server URL',
+				desc: 'Enter the full URL of your WebDAV server, e.g., https://your-nas:5006 or https://your-nas:5006/webdav',
+				placeholder: 'https://your-nas:5006',
+			},
+			basePath: {
+				name: 'Server base path',
+				desc: 'The path prefix returned by the server. For Synology WebDAV, this is usually /. Adjust if file paths are not displayed correctly.',
+				placeholder: '/',
+			},
+		},
 		account: {
 			name: 'Account',
 			desc: 'Enter your WebDAV account',
@@ -120,6 +138,35 @@ export default {
 			name: 'Skip large files',
 			desc: 'Files exceeding this size will be skipped during synchronization. If sync crashes occur, try lowering this value. Leave empty for no limit.',
 			placeholder: 'e.g., 10 MiB or 500 KiB',
+		},
+		incrementalSync: {
+			title: 'Incremental Sync Settings',
+			desc: 'Incremental sync for generic WebDAV mode, supporting efficient synchronization of millions of files.',
+			status: {
+				name: 'Index Status',
+				desc: 'Current file index statistics',
+				noIndex: 'No index built yet',
+				indexed: 'Indexed {{fileCount}} files, {{dirCount}} directories',
+			},
+			rebuildIndex: {
+				name: 'Rebuild Index',
+				desc: 'Clear existing index and rescan remote files. Use for first sync or when index is corrupted.',
+				button: 'Rebuild Index',
+				confirm: 'Confirm Rebuild',
+				confirmMessage: 'This will clear the existing index and rescan all remote files. This may take a long time for large number of files. Continue?',
+				success: 'Index rebuilt successfully',
+				inProgress: 'Rebuilding index...',
+			},
+			clearIndex: {
+				name: 'Clear Index',
+				desc: 'Delete local file index. Will be rebuilt on next sync.',
+				button: 'Clear',
+				success: 'Index cleared',
+			},
+			howItWorks: {
+				name: 'How It Works',
+				desc: 'Incremental sync uses hierarchical directory mtime detection strategy, only scanning directories that have changed, significantly reducing network requests and scan time. First sync builds a complete index, subsequent syncs only detect changes.',
+			},
 		},
 		log: {
 			title: 'Debug logs',

@@ -48,7 +48,11 @@ export class NutstoreSync {
 		},
 	) {
 		this.options = Object.freeze(this.options)
-		this.remoteFs = new NutstoreFileSystem(this.options)
+		// 传入settings以支持通用WebDAV模式
+		this.remoteFs = new NutstoreFileSystem({
+			...this.options,
+			settings: this.plugin.settings,
+		})
 		this.localFS = new LocalVaultFileSystem({
 			vault: this.options.vault,
 			syncRecord: new SyncRecord(
